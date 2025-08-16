@@ -24,7 +24,7 @@ Create a `.env.local` file:
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-OPENROUTER_API_KEY=your_openrouter_key
+GEMINI_API_KEY=your_gemini_key
 ```
 
 ## Tech Stack
