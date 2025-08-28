@@ -49,7 +49,7 @@ export function ExpenseChart({ transactions }: ExpenseChartProps) {
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number) => [`₹${value.toLocaleString()}`, '']}
+              formatter={(value: any) => [`₹${Number(value).toLocaleString()}`, '']}
               contentStyle={{
                 borderRadius: '10px',
                 border: '1px solid #f1f5f9',
