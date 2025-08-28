@@ -138,7 +138,7 @@ export default function DashboardAnalytics({ transactions }: DashboardAnalyticsP
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={(v) => `₹${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} width={48} />
                 <Tooltip
-                  formatter={(val: any, name: string) => [fmt(val), name === 'income' ? 'Income' : 'Expenses']}
+                  formatter={(val: any, name: any) => [fmt(val), name === 'income' ? 'Income' : 'Expenses']}
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
                 />
                 <Bar dataKey="income" fill="#34d399" radius={[3, 3, 0, 0]} name="income" />
