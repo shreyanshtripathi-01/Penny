@@ -1,115 +1,131 @@
 import React from 'react';
-import { 
-  LayoutDashboard, 
-  Receipt, 
-  PieChart, 
-  Sparkles,
-  Settings, 
-  LogOut,
-  Wallet
-} from 'lucide-react';
+import Link from 'next/link';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  userEmail?: string;
 }
 
-export default function DashboardLayout({ children, activeTab, setActiveTab }: DashboardLayoutProps) {
+const NAV = [
+  {
+    id: 'dashboard',
+    label: 'Overview',
+    icon: (
+      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+        <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'transactions',
+    label: 'Ledger',
+    icon: (
+      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/>
+        <line x1="9" y1="12" x2="15" y2="12"/>
+        <line x1="9" y1="16" x2="13" y2="16"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'budget',
+    label: 'Budgets',
+    icon: (
+      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+        <path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z"/>
+        <path d="M12 6v6l4 4"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'parser',
+    label: 'Statement Parser',
+    icon: (
+      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
+        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+      </svg>
+    ),
+  },
+];
+
+export default function DashboardLayout({ children, activeTab, setActiveTab, userEmail }: DashboardLayoutProps) {
   return (
-    <div className="flex h-screen bg-[#090D16] text-gray-100 font-sans overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-[#F7F8FA]">
       {/* Sidebar */}
-      <aside className="w-64 bg-[#111726] border-r border-[#1F293D] flex flex-col z-20">
-        <div className="h-16 flex items-center px-6 border-b border-[#1F293D]">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 bg-gradient-to-tr from-indigo-600 to-violet-500 rounded-lg shadow-lg shadow-indigo-500/20">
-              <Wallet className="h-5 w-5 text-white" />
+      <aside className="w-[220px] flex-shrink-0 bg-white border-r border-gray-100 flex flex-col h-full">
+        {/* Brand */}
+        <div className="px-5 h-[56px] flex items-center border-b border-gray-100 flex-shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
             </div>
-            <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-              Penny.ai
-            </span>
+            <span className="text-[15px] font-semibold tracking-tight text-gray-900">Penny</span>
           </div>
         </div>
-        
-        <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5">
-          <NavItem 
-            icon={<LayoutDashboard size={18} />} 
-            label="Dashboard" 
-            active={activeTab === 'dashboard'} 
-            onClick={() => setActiveTab('dashboard')} 
-          />
-          <NavItem 
-            icon={<Receipt size={18} />} 
-            label="Ledger" 
-            active={activeTab === 'transactions'} 
-            onClick={() => setActiveTab('transactions')} 
-          />
-          <NavItem 
-            icon={<PieChart size={18} />} 
-            label="Budgets" 
-            active={activeTab === 'budget'} 
-            onClick={() => setActiveTab('budget')} 
-          />
-          <NavItem 
-            icon={<Sparkles size={18} />} 
-            label="AI Statement Parser" 
-            active={activeTab === 'parser'} 
-            onClick={() => setActiveTab('parser')} 
-          />
+
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
+          <p className="px-2 pt-1 pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
+            Main
+          </p>
+          {NAV.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all ${
+                activeTab === item.id
+                  ? 'bg-indigo-50 text-indigo-700 font-medium'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <span className={activeTab === item.id ? 'text-indigo-600' : 'text-gray-400'}>
+                {item.icon}
+              </span>
+              {item.label}
+            </button>
+          ))}
         </nav>
-        
-        <div className="p-4 border-t border-[#1F293D] bg-[#0E1320]/50">
-          <NavItem 
-            icon={<Settings size={18} />} 
-            label="Settings" 
-            active={activeTab === 'settings'} 
-            onClick={() => setActiveTab('settings')} 
-          />
-          <button className="w-full mt-2 flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-rose-400 hover:bg-rose-500/10 transition-all duration-200">
-            <LogOut size={18} className="mr-3 flex-shrink-0" />
-            Sign out
-          </button>
+
+        {/* Footer */}
+        <div className="border-t border-gray-100 p-3 flex-shrink-0 space-y-1">
+          {userEmail && (
+            <div className="px-2.5 py-2 rounded-lg bg-gray-50 mb-1">
+              <p className="text-[11px] text-gray-400 leading-none mb-0.5">Signed in as</p>
+              <p className="text-xs font-medium text-gray-700 truncate">{userEmail}</p>
+            </div>
+          )}
+          <form action="/auth/signout" method="post">
+            <button
+              type="submit"
+              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all"
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16,17 21,12 16,7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              Sign out
+            </button>
+          </form>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto relative bg-[#090D16]">
-        {/* Ambient background glows */}
-        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-indigo-600/5 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[150px] pointer-events-none"></div>
-        
-        <div className="p-8 max-w-6xl mx-auto z-10 relative">
+      {/* Main */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-5xl mx-auto px-8 py-7">
           {children}
         </div>
       </main>
     </div>
-  );
-}
-
-function NavItem({ 
-  icon, 
-  label, 
-  active = false,
-  onClick
-}: { 
-  icon: React.ReactNode; 
-  label: string; 
-  active?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button 
-      onClick={onClick}
-      className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-        active 
-          ? 'bg-gradient-to-r from-indigo-600/10 to-violet-600/5 text-white border-l-2 border-indigo-500 shadow-md shadow-indigo-950/20' 
-          : 'text-gray-400 hover:text-gray-200 hover:bg-[#161F33]/50'
-      }`}
-    >
-      <span className={`mr-3 flex-shrink-0 transition-colors duration-200 ${active ? 'text-indigo-400' : 'text-gray-400'}`}>
-        {icon}
-      </span>
-      {label}
-    </button>
   );
 }
