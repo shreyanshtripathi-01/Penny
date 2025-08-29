@@ -1,97 +1,299 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Penny — Personal Finance',
+  description: 'A high-density personal finance ledger. Track every rupee. No clutter, no ads.',
+};
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
-      {/* 
-        NO AI GRADIENTS. NO GLOWING ORBS. NO BENTO BOXES.
-        Pure, brutalist, editorial minimalism. 
-      */}
+    <div
+      className="min-h-screen bg-[#f5f5f2] text-[#030213] font-sans"
+      style={{ WebkitFontSmoothing: 'antialiased' }}
+    >
+      {/* Grid background — subtle ledger lines */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundImage:
+            'linear-gradient(rgba(3,2,19,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(3,2,19,0.04) 1px, transparent 1px)',
+          backgroundSize: '64px 64px',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
 
-      {/* Header */}
-      <header className="px-6 lg:px-12 py-8 flex items-center justify-between max-w-7xl mx-auto w-full border-b-2 border-black">
-        <span className="text-2xl font-black tracking-tighter uppercase">
-          Penny.
-        </span>
-        <div className="flex items-center gap-8">
-          <Link href="/login" className="text-[15px] font-bold hover:underline decoration-2 underline-offset-4">
-            Log in
-          </Link>
-          <Link href="/register" className="text-[15px] font-bold bg-black text-white px-6 py-2.5 rounded-none hover:bg-emerald-500 hover:text-black transition-none border-2 border-transparent hover:border-black">
-            Sign up
-          </Link>
-        </div>
-      </header>
-
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 lg:px-12 pt-24 pb-32 flex flex-col lg:flex-row gap-16 lg:gap-24">
-        
-        {/* Left: Aggressive, High-Contrast Typography */}
-        <div className="flex-1">
-          <h1 className="text-[72px] lg:text-[110px] tracking-tighter leading-[0.9] font-black mb-10 uppercase">
-            Your <br/>
-            Money. <br/>
-            No <br/>
-            Bullshit.
-          </h1>
-          <p className="text-[20px] lg:text-[24px] font-medium leading-[1.5] max-w-lg mb-12">
-            No gamification. No ads. No bloated dashboards. Just a high-density, lightning-fast ledger that extracts data from your SMS and gets out of your way.
-          </p>
-          <Link 
-            href="/register" 
-            className="inline-block bg-black text-white px-10 py-5 text-[18px] font-bold uppercase tracking-wide hover:bg-emerald-500 hover:text-black border-2 border-transparent hover:border-black transition-none"
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        {/* Header */}
+        <header
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '28px 48px',
+            borderBottom: '1px solid rgba(3,2,19,0.08)',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '18px',
+              fontWeight: 800,
+              letterSpacing: '-0.04em',
+              color: '#030213',
+            }}
           >
-            Create Your Ledger
-          </Link>
-        </div>
+            penny<span style={{ color: '#10b981' }}>.</span>
+          </span>
 
-        {/* Right: The Raw Ledger (Anti-AI Mockup) */}
-        {/* Instead of a fake glassmorphic card, we show a raw, brutalist data table. This is what humans build when they care about data, not aesthetics. */}
-        <div className="flex-1 pt-4 lg:pt-0">
-          <div className="border-2 border-black p-1 bg-white">
-            <div className="bg-black text-white px-4 py-3 font-bold uppercase tracking-widest text-sm flex justify-between">
-              <span>Ledger_Status</span>
-              <span className="text-emerald-400">SYNCED</span>
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+            <Link
+              href="/login"
+              style={{
+                fontSize: '13px',
+                fontWeight: 500,
+                color: '#717182',
+                textDecoration: 'none',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Log in
+            </Link>
+            <Link
+              href="/register"
+              style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: '#f5f5f2',
+                background: '#030213',
+                padding: '9px 20px',
+                textDecoration: 'none',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              Get started
+            </Link>
+          </nav>
+        </header>
+
+        {/* Hero */}
+        <main>
+          <section
+            style={{
+              maxWidth: '900px',
+              margin: '0 auto',
+              padding: '120px 48px 80px',
+            }}
+          >
+            {/* Eyebrow */}
+            <p
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: '#10b981',
+                marginBottom: '32px',
+              }}
+            >
+              Personal Finance Ledger
+            </p>
+
+            {/* Headline — left-aligned, tightly tracked, editorial */}
+            <h1
+              style={{
+                fontSize: 'clamp(48px, 7vw, 88px)',
+                fontWeight: 800,
+                letterSpacing: '-0.04em',
+                lineHeight: 1.0,
+                color: '#030213',
+                margin: '0 0 40px',
+                maxWidth: '14ch',
+              }}
+            >
+              Finance,<br />engineered.
+            </h1>
+
+            {/* Subtitle — precise, no buzzwords */}
+            <p
+              style={{
+                fontSize: '17px',
+                fontWeight: 400,
+                lineHeight: 1.65,
+                color: '#717182',
+                maxWidth: '440px',
+                margin: '0 0 56px',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              A private ledger for your money. Paste a bank SMS and Penny
+              categorises it instantly. No subscriptions. No trackers.
+              Your data stays yours.
+            </p>
+
+            {/* CTA row — sharp corners, no pills */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <Link
+                href="/register"
+                style={{
+                  display: 'inline-block',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  letterSpacing: '-0.01em',
+                  color: '#f5f5f2',
+                  background: '#030213',
+                  padding: '13px 28px',
+                  textDecoration: 'none',
+                }}
+              >
+                Create free account
+              </Link>
+              <Link
+                href="/login"
+                style={{
+                  display: 'inline-block',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  letterSpacing: '-0.01em',
+                  color: '#717182',
+                  textDecoration: 'none',
+                  borderBottom: '1px solid rgba(3,2,19,0.15)',
+                  paddingBottom: '1px',
+                }}
+              >
+                Already have an account
+              </Link>
             </div>
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b-2 border-black text-sm uppercase tracking-wider">
-                  <th className="p-4 font-bold">Date</th>
-                  <th className="p-4 font-bold">Merchant</th>
-                  <th className="p-4 font-bold text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody className="font-mono text-sm">
-                <tr className="border-b border-black/20 hover:bg-emerald-50">
-                  <td className="p-4">12 Oct</td>
-                  <td className="p-4 font-bold">Swiggy Instamart</td>
-                  <td className="p-4 text-right text-red-600">-₹842.00</td>
-                </tr>
-                <tr className="border-b border-black/20 hover:bg-emerald-50">
-                  <td className="p-4">11 Oct</td>
-                  <td className="p-4 font-bold">Uber India</td>
-                  <td className="p-4 text-right text-red-600">-₹450.00</td>
-                </tr>
-                <tr className="border-b border-black/20 hover:bg-emerald-50">
-                  <td className="p-4">10 Oct</td>
-                  <td className="p-4 font-bold">Netflix Subscription</td>
-                  <td className="p-4 text-right text-red-600">-₹199.00</td>
-                </tr>
-                <tr className="hover:bg-emerald-50">
-                  <td className="p-4">09 Oct</td>
-                  <td className="p-4 font-bold">Salary</td>
-                  <td className="p-4 text-right text-emerald-600 font-bold">+₹1,45,000.00</td>
+          </section>
+
+          {/* Divider */}
+          <div style={{ borderTop: '1px solid rgba(3,2,19,0.08)', margin: '0 48px' }} />
+
+          {/* What it does — 3 facts, ledger-table style, no cards, no icons */}
+          <section
+            style={{
+              maxWidth: '900px',
+              margin: '0 auto',
+              padding: '80px 48px',
+            }}
+          >
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                {[
+                  {
+                    num: '01',
+                    title: 'Paste any bank SMS',
+                    detail:
+                      'Gemini 1.5 Flash reads your raw transaction message and extracts the amount, merchant, and date. No manual entry.',
+                  },
+                  {
+                    num: '02',
+                    title: 'Auto-categorised',
+                    detail:
+                      'Food, transport, utilities, shopping — each transaction is classified automatically. A fallback regex engine works even without the API.',
+                  },
+                  {
+                    num: '03',
+                    title: 'Private by design',
+                    detail:
+                      'Row-level security on every database query. Only you can read your rows. Zero third-party analytics scripts.',
+                  },
+                ].map((row, i) => (
+                  <tr
+                    key={i}
+                    style={{
+                      borderTop: '1px solid rgba(3,2,19,0.08)',
+                    }}
+                  >
+                    <td
+                      style={{
+                        padding: '32px 0',
+                        paddingRight: '48px',
+                        width: '48px',
+                        verticalAlign: 'top',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        letterSpacing: '0.08em',
+                        color: '#c4c4cc',
+                        fontVariantNumeric: 'tabular-nums',
+                        fontFamily: 'ui-monospace, monospace',
+                      }}
+                    >
+                      {row.num}
+                    </td>
+                    <td
+                      style={{
+                        padding: '32px 0',
+                        paddingRight: '48px',
+                        verticalAlign: 'top',
+                        width: '220px',
+                        fontSize: '15px',
+                        fontWeight: 700,
+                        letterSpacing: '-0.02em',
+                        color: '#030213',
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {row.title}
+                    </td>
+                    <td
+                      style={{
+                        padding: '32px 0',
+                        verticalAlign: 'top',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        color: '#717182',
+                        lineHeight: 1.65,
+                        letterSpacing: '-0.005em',
+                      }}
+                    >
+                      {row.detail}
+                    </td>
+                  </tr>
+                ))}
+                <tr style={{ borderTop: '1px solid rgba(3,2,19,0.08)' }}>
+                  <td colSpan={3} style={{ padding: 0 }} />
                 </tr>
               </tbody>
             </table>
-          </div>
-          
-          <div className="mt-8 border-l-4 border-black pl-6">
-            <h3 className="text-2xl font-black uppercase mb-2">How it works</h3>
-            <p className="text-lg font-medium">1. You paste your bank SMS.<br/>2. Our deterministic regex engine extracts the data.<br/>3. It goes into your ledger. That's it.</p>
-          </div>
-        </div>
-        
-      </main>
+          </section>
+        </main>
+
+        {/* Footer */}
+        <footer
+          style={{
+            borderTop: '1px solid rgba(3,2,19,0.08)',
+            padding: '28px 48px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '13px',
+              fontWeight: 500,
+              color: '#c4c4cc',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            © {new Date().getFullYear()} Penny
+          </span>
+          <span
+            style={{
+              fontSize: '11px',
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: '#c4c4cc',
+            }}
+          >
+            Built with Next.js · Supabase · Gemini
+          </span>
+        </footer>
+      </div>
     </div>
   );
 }
