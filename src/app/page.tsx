@@ -1,6 +1,10 @@
 import Link from 'next/link';
+import { createClient } from '@/utils/supabase/server';
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <div className="min-h-screen bg-[#f5f5f2] text-[#030213] font-sans selection:bg-[#030213] selection:text-[#f5f5f2] flex flex-col">
       {/* Texture Layer - subtle SVG grid */}
@@ -16,14 +20,23 @@ export default function LandingPage() {
             penny<span className="text-[#10b981]">.</span>
           </span>
         </div>
-        <div className="col-span-4 md:col-span-4 grid grid-cols-1 md:grid-cols-2">
-          <Link href="/login" className="hidden md:flex items-center justify-center p-6 border-r border-[#030213] text-sm font-bold uppercase tracking-widest hover:bg-[#030213] hover:text-[#f5f5f2] transition-none">
-            Log in
-          </Link>
-          <Link href="/register" className="flex items-center justify-center p-6 text-sm font-bold uppercase tracking-widest hover:bg-[#030213] hover:text-[#f5f5f2] transition-none">
-            Sign up
-          </Link>
-        </div>
+        
+        {user ? (
+          <div className="col-span-4 md:col-span-4 flex">
+            <Link href="/dashboard" className="flex-1 flex items-center justify-center p-6 text-sm font-bold uppercase tracking-widest bg-[#10b981] text-[#030213] hover:bg-[#030213] hover:text-[#f5f5f2] border-l border-[#030213] transition-none">
+              Go to Dashboard
+            </Link>
+          </div>
+        ) : (
+          <div className="col-span-4 md:col-span-4 grid grid-cols-1 md:grid-cols-2">
+            <Link href="/login" className="hidden md:flex items-center justify-center p-6 border-l md:border-l-0 border-r border-[#030213] text-sm font-bold uppercase tracking-widest hover:bg-[#030213] hover:text-[#f5f5f2] transition-none">
+              Log in
+            </Link>
+            <Link href="/register" className="flex items-center justify-center p-6 text-sm font-bold uppercase tracking-widest hover:bg-[#030213] hover:text-[#f5f5f2] transition-none">
+              Sign up
+            </Link>
+          </div>
+        )}
       </header>
 
       {/* Main Hero Grid */}
@@ -64,9 +77,15 @@ export default function LandingPage() {
           </div>
           
           <div className="border-t border-[#030213]">
-             <Link href="/register" className="flex items-center justify-center p-8 text-xl md:text-2xl font-extrabold tracking-tighter uppercase bg-[#030213] text-[#f5f5f2] hover:bg-[#f5f5f2] hover:text-[#030213] transition-none w-full border-t border-[#030213] hover:border-[#030213]">
-                [ Initialize ]
-             </Link>
+             {user ? (
+               <Link href="/dashboard" className="flex items-center justify-center p-8 text-xl md:text-2xl font-extrabold tracking-tighter uppercase bg-[#030213] text-[#f5f5f2] hover:bg-[#f5f5f2] hover:text-[#030213] transition-none w-full border-t border-[#030213] hover:border-[#030213]">
+                  [ Enter Dashboard ]
+               </Link>
+             ) : (
+               <Link href="/register" className="flex items-center justify-center p-8 text-xl md:text-2xl font-extrabold tracking-tighter uppercase bg-[#030213] text-[#f5f5f2] hover:bg-[#f5f5f2] hover:text-[#030213] transition-none w-full border-t border-[#030213] hover:border-[#030213]">
+                  [ Initialize ]
+               </Link>
+             )}
           </div>
         </div>
       </main>
