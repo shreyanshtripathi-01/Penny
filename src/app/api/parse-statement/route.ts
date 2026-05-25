@@ -66,7 +66,7 @@ ${text || 'No text provided. Please parse the attached document.'}`;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
+          generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
         }),
       }
     );
