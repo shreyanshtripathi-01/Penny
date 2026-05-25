@@ -14,7 +14,7 @@ export default async function LandingPage() {
       />
       
       {/* Top Nav - Brutalist Grid */}
-      <header className="grid grid-cols-12 border-b border-[#030213] relative z-10">
+      <header className="grid grid-cols-12 border-b border-[#030213] sticky top-0 z-50 bg-[#f5f5f2]">
         <div className="col-span-8 md:col-span-8 p-6 md:p-8 border-r border-[#030213] flex items-center">
           <span className="text-2xl md:text-3xl font-extrabold tracking-tighter text-[#030213]">
             penny<span className="text-[#10b981]">.</span>
