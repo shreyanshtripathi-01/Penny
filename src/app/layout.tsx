@@ -16,10 +16,33 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    template: 'Penny - %s',
-    default: 'Penny',
+    template: 'Penny. %s',
+    default: 'Penny. | Absolute Financial Control',
   },
-  description: "Track every rupee, effortlessly. Personal finance made simple.",
+  description: "Stop feeding your financial data to bloated ad networks. Penny is a high-density, locally-parsed ledger designed for speed and complete ownership.",
+  keywords: ["personal finance", "ledger", "brutalist design", "AI statement parser", "financial tracker", "expense manager"],
+  authors: [{ name: "Penny Engineering" }],
+  openGraph: {
+    title: 'Penny. | Absolute Financial Control',
+    description: "A high-density, locally-parsed ledger designed for speed and complete ownership.",
+    url: 'https://penny-blond.vercel.app',
+    siteName: 'Penny.',
+    images: [
+      {
+        url: 'https://penny-blond.vercel.app/og-image.png', // Assuming a standard OG image path
+        width: 1200,
+        height: 630,
+        alt: 'Penny. Brutalist Financial Dashboard',
+      },
+    ],
+    locale: 'en_IN',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Penny. | Absolute Financial Control',
+    description: "A high-density, locally-parsed ledger designed for speed and complete ownership.",
+  },
 };
 
 export default function RootLayout({
