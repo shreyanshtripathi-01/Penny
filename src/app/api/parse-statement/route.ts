@@ -1,7 +1,29 @@
 import { NextResponse } from 'next/server';
 
+// Basic In-Memory Rate Limiter Map
+const rateLimitMap = new Map<string, { count: number, resetTime: number }>();
+
 export async function POST(request: Request) {
   try {
+    // 1. Rate Limiting Check (20 requests per minute per IP)
+    const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+    const now = Date.now();
+    const rateLimitInfo = rateLimitMap.get(ip);
+    
+    if (rateLimitInfo) {
+      if (now > rateLimitInfo.resetTime) {
+        rateLimitMap.set(ip, { count: 1, resetTime: now + 60000 });
+      } else {
+        if (rateLimitInfo.count >= 20) {
+          return NextResponse.json({ error: 'Too many requests. Please try again in a minute.' }, { status: 429 });
+        }
+        rateLimitInfo.count += 1;
+      }
+    } else {
+      rateLimitMap.set(ip, { count: 1, resetTime: now + 60000 });
+    }
+
+    // 2. Parse payload
     const { text } = await request.json();
 
     if (!text?.trim()) {

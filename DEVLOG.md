@@ -1,99 +1,230 @@
-# Development Log — Penny
+# Penny: Comprehensive Development & Architecture Log
 
-A comprehensive technical reference covering every architectural decision, command, library, function, and concept used in building this application.
+Welcome to the Penny Development Log. This document serves as the absolute source of truth for every architectural decision, command, library choice, custom heuristic, and React pattern used in the construction of Penny. This log is specifically engineered to provide deep technical insight into the codebase.
 
 ---
 
 ## Table of Contents
-1. [Project Bootstrap & Tooling](#1-project-bootstrap--tooling)
-2. [TypeScript Configuration Deep Dive](#2-typescript-configuration-deep-dive)
-3. [Tailwind CSS 4 & Design Token System](#3-tailwind-css-4--design-token-system)
-4. [Database Layer — Supabase & PostgreSQL](#4-database-layer--supabase--postgresql)
-5. [Authentication Architecture](#5-authentication-architecture)
-6. [Middleware & Route Protection](#6-middleware--route-protection)
-7. [Server Components vs Client Components](#7-server-components-vs-client-components)
-8. [Dashboard Page — Server-Side Data Fetching](#8-dashboard-page--server-side-data-fetching)
-9. [Client-Side State Management (DashboardClient)](#9-client-side-state-management-dashboardclient)
-10. [Component Architecture & Composition](#10-component-architecture--composition)
-11. [LLM Integration — Gemini API](#11-llm-integration--gemini-api)
-12. [Heuristic Fallback Parser](#12-heuristic-fallback-parser)
-13. [Data Visualization — Recharts](#13-data-visualization--recharts)
-14. [Budget Tracking System](#14-budget-tracking-system)
-15. [OAuth Callback Flow](#15-oauth-callback-flow)
-16. [Sign Out & Cache Revalidation](#16-sign-out--cache-revalidation)
-17. [Landing Page & Navigation](#17-landing-page--navigation)
+1. [Project Initialization & Scaffolding](#1-project-initialization--scaffolding)
+2. [TypeScript Strict Mode Configuration](#2-typescript-strict-mode-configuration)
+3. [The Brutalist Design System & Tailwind v4](#3-the-brutalist-design-system--tailwind-v4)
+4. [Database Schema: PostgreSQL & Supabase](#4-database-schema-postgresql--supabase)
+5. [Authentication State Machine](#5-authentication-state-machine)
+6. [Next.js Middleware & Edge Runtime](#6-nextjs-middleware--edge-runtime)
+7. [RSC (React Server Components) vs Client Boundaries](#7-rsc-react-server-components-vs-client-boundaries)
+8. [Dashboard Component Architecture](#8-dashboard-component-architecture)
+9. [MagicParser: Generative AI + Heuristic Fallback](#9-magicparser-generative-ai--heuristic-fallback)
+10. [Data Visualization with Recharts](#10-data-visualization-with-recharts)
+11. [Dynamic Budget Allocation Engine](#11-dynamic-budget-allocation-engine)
+12. [State Synchronization & Local Storage](#12-state-synchronization--local-storage)
+13. [Deployment & Environment Management](#13-deployment--environment-management)
 
 ---
 
-## 1. Project Bootstrap & Tooling
+## 1. Project Initialization & Scaffolding
 
-### Commands Executed
+### CLI Commands Executed
+To guarantee a clean slate without legacy cruft, the project was bootstrapped using the bleeding-edge Next.js 15 template.
+
 ```bash
-npx -y create-next-app@latest penny --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" --use-npm --disable-git
+# Initialize the core Next.js application
+npx -y create-next-app@latest penny \
+  --typescript \
+  --tailwind \
+  --eslint \
+  --app \
+  --src-dir \
+  --import-alias "@/*" \
+  --use-npm \
+  --disable-git
+
+# Enter the working directory
 cd penny
+
+# Install core dependencies for backend connectivity and UI rendering
 npm install @supabase/supabase-js @supabase/ssr lucide-react recharts clsx tailwind-merge
 ```
 
-### Why each flag matters
-- `--app`: Enables the App Router (introduced in Next.js 13). Unlike the legacy Pages Router (`pages/`), the App Router uses a file-system based routing inside `src/app/` where every `page.tsx` is a route and every `layout.tsx` wraps its children. Components are **React Server Components by default**, meaning they execute on the server and send zero JavaScript to the client unless explicitly opted out.
-- `--src-dir`: Isolates application code under `src/` to separate it from config files (`tsconfig.json`, `package.json`, `next.config.ts`) at the root. This is a common convention in larger codebases.
-- `--import-alias "@/*"`: Configures the TypeScript path alias `@/*` → `./src/*` in `tsconfig.json`. This means instead of writing `import { createClient } from '../../../utils/supabase/server'`, we write `import { createClient } from '@/utils/supabase/server'`. Under the hood, TypeScript's `paths` compiler option resolves these at compile time; they are not runtime module aliases.
-- `--disable-git`: Prevents `create-next-app` from running `git init` automatically, giving us full control over our repository initialization and commit history.
-
-### Why each dependency was chosen
-| Package | Purpose | Why this one specifically |
-|---|---|---|
-| `@supabase/supabase-js` | Core Supabase client | Provides `createClient()` to interact with PostgreSQL, Auth, and Storage via Supabase's REST API (PostgREST) |
-| `@supabase/ssr` | Server-side rendering support | Required for Next.js App Router. Provides `createBrowserClient()` and `createServerClient()` that handle cookie-based auth sessions correctly across Server Components, Client Components, and Middleware |
-| `lucide-react` | Icon library | Tree-shakable SVG icons. Only the icons we import (`TrendingUp`, `ArrowRight`, etc.) end up in the bundle. Unlike FontAwesome, there's no global CSS or font file to load |
-| `recharts` | Charting library | Built on React components + D3.js internals. Renders SVG natively. We use `<PieChart>`, `<Pie>`, `<Cell>`, `<Tooltip>`, and `<ResponsiveContainer>` |
-| `clsx` | Conditional class joining | Takes multiple arguments and conditionally joins them: `clsx('base', isActive && 'active', isError && 'error')` → `"base active"`. Returns a clean string with no `undefined` or `false` values |
-| `tailwind-merge` | Tailwind class deduplication | Resolves conflicts like `"px-4 px-8"` → `"px-8"`. Without this, Tailwind would apply whichever class appears last in the CSS file (unpredictable) |
+### Dependency Rationale
+- **`@supabase/ssr`**: Unlike the standard Supabase client, the SSR package allows for cookie-based session management across Server Components, Route Handlers, and Middleware. This prevents hydration mismatches and ensures secure HTTP-only cookie transport.
+- **`lucide-react`**: Selected over FontAwesome or HeroIcons for its strict tree-shaking capabilities. Only imported SVG paths are bundled, resulting in a zero-CSS overhead.
+- **`recharts`**: The industry standard for React data visualization. Built on D3 primitives but exposes declarative components (`<PieChart>`, `<Cell>`).
+- **`tailwind-merge` & `clsx`**: Essential utilities for dynamic component styling. `tailwind-merge` resolves conflicting classes (e.g., merging `p-4` and `p-8` into `p-8` instead of letting the CSS cascade unpredictably).
 
 ---
 
-## 2. TypeScript Configuration Deep Dive
+## 2. TypeScript Strict Mode Configuration
 
-### `tsconfig.json` — Key Options Explained
-- **`target: "ES2017"`**: Compile output to ES2017, which includes `async/await` natively. This avoids the Babel-style generator transform that bloats output.
-- **`module: "esnext"` + `moduleResolution: "bundler"`**: Tells TypeScript we're in a bundler environment (Next.js uses Webpack/Turbopack). This enables `import` / `export` syntax and allows importing `.json` files.
-- **`strict: true`**: Enables all strict type-checking flags (`strictNullChecks`, `noImplicitAny`, `strictFunctionTypes`, etc.). This catches bugs at compile time — for example, accessing `user.email` without checking if `user` is null.
-- **`noEmit: true`**: TypeScript only type-checks; it does NOT produce `.js` output files. Next.js handles the actual compilation via SWC (a Rust-based compiler that's 20x faster than Babel).
-- **`isolatedModules: true`**: Each file must be independently compilable. This is required because SWC compiles files individually (not as a project). It prevents patterns like `const enum` which require cross-file analysis.
-- **`jsx: "react-jsx"`**: Uses the automatic JSX runtime (React 17+). We don't need `import React from 'react'` at the top of every file — the compiler inserts the JSX factory automatically.
-- **`incremental: true`**: Caches type-check results in `.tsbuildinfo`. Subsequent `tsc` runs only re-check changed files.
-- **`paths: { "@/*": ["./src/*"] }`**: The import alias. When we write `@/utils/supabase/server`, TypeScript resolves it to `./src/utils/supabase/server`.
+The `tsconfig.json` was tuned for maximum safety and modern compilation targets. Next.js relies on SWC (Speedy Web Compiler) for the actual `.js` emission, so `tsc` is used strictly as a static analyzer.
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+```
+
+### Why `isolatedModules: true`?
+Because SWC compiles each file independently (without analyzing the entire project graph), TypeScript must be restricted from using features that require cross-file knowledge (like `const enum` or ambient namespaces). This flag enforces that constraint during development.
 
 ---
 
-## 3. Tailwind CSS 4 & Design Token System
+## 3. The Brutalist Design System & Tailwind v4
 
-### `globals.css` Architecture
-Tailwind CSS 4 uses the new `@theme` directive instead of `tailwind.config.js`. Our `globals.css` defines a comprehensive **design token system** using CSS custom properties.
+Penny abandons the generic "SaaS aesthetic" (soft shadows, rounded corners, low contrast) in favor of **High-Density Brutalism**.
 
-**Key concept — `@import "tailwindcss"`**: In v4, this single import replaces the old `@tailwind base; @tailwind components; @tailwind utilities;` directives.
+### Principles
+1. **Zero Border Radius**: Every container, button, and input is a perfect rectangle (`rounded-none`).
+2. **High Contrast Borders**: Hard `#030213` borders map out the grid geometry.
+3. **Monospace Typography**: System parameters and meta-data use fixed-width fonts for an engineering aesthetic.
+4. **Solid Shadows**: Instead of Gaussian blurs, we use solid, unblurred drop shadows: `shadow-[4px_4px_0px_0px_#030213]`.
 
-**`@theme { --font-sans: var(--font-inter), ... }`**: Registers our custom Inter font as the default sans-serif family. The `--font-inter` variable is injected by Next.js's `next/font/google` loader (see `layout.tsx`).
+### `globals.css` Implementation
+Tailwind CSS v4 introduces the `@theme` directive, replacing `tailwind.config.js`.
 
-**Why `oklch()` color format?** Our `:root` CSS variables use `oklch(0.145 0 0)` instead of hex. OKLCH is a perceptually uniform color space — `0.145` is lightness, `0` is chroma (saturation), `0` is hue. Perceptually uniform means that changing lightness by 0.1 always *looks* like the same amount of change, unlike HSL where the same lightness shift looks different for different hues.
+```css
+@import "tailwindcss";
 
-**`-webkit-font-smoothing: antialiased`**: Forces sub-pixel antialiasing on macOS/WebKit browsers, making text appear thinner and sharper — critical for the "premium" aesthetic.
+@theme {
+  --font-sans: var(--font-inter);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
 
-**Custom scrollbar styles**: `::-webkit-scrollbar` pseudo-elements customize scrollbar appearance. `width: 5px` creates a thin, unobtrusive scrollbar. `border-radius: 99px` makes the thumb pill-shaped.
+@theme inline {
+  /* Mapping variables to Tailwind utilities */
+}
 
-**`@theme inline { ... }`**: Maps CSS variables to Tailwind utility classes. For example, `--color-primary: var(--primary)` means we can use `bg-primary`, `text-primary` etc. in JSX.
+html, body {
+  background-color: #f5f5f2;
+  color: #030213;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar for a premium feel */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #030213;
+  border-radius: 99px;
+}
+```
+
+The background `#f5f5f2` provides an off-white, paper-like texture, contrasting sharply with the `#030213` deep-ink black.
 
 ---
 
-## 4. Database Layer — Supabase & PostgreSQL
+## 4. Database Schema: PostgreSQL & Supabase
 
-### Three Supabase Client Implementations
+The backend relies on Supabase, exposing a PostgreSQL database via PostgREST.
 
-We maintain **three separate Supabase client factories**, each designed for a different execution context in Next.js:
+### The `transactions` Table
+This is the core ledger. It utilizes Row Level Security (RLS) to ensure users can only query their own data.
 
-#### `src/utils/supabase/client.ts` — Browser Client
+```sql
+CREATE TABLE public.transactions (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    description text NOT NULL,
+    amount numeric NOT NULL CHECK (amount >= 0),
+    date date NOT NULL DEFAULT CURRENT_DATE,
+    category text NOT NULL,
+    type text NOT NULL CHECK (type IN ('income', 'expense')),
+    created_at timestamp with time zone DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+
+-- Create Policies
+CREATE POLICY "Users can view own transactions"
+ON public.transactions FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own transactions"
+ON public.transactions FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own transactions"
+ON public.transactions FOR DELETE
+USING (auth.uid() = user_id);
+```
+
+### Performance Indexing
+An index on `user_id` and `date` ensures lightning-fast queries when rendering the dashboard:
+```sql
+CREATE INDEX idx_transactions_user_date ON public.transactions(user_id, date DESC);
+```
+
+---
+
+## 5. Authentication State Machine
+
+Penny handles authentication via Supabase Auth. The flow supports both Magic Links, Email/Password, and Google OAuth 2.0.
+
+### Server Actions for Auth (`src/app/login/actions.ts`)
+Next.js Server Actions process the form submissions entirely on the backend, removing the need for a separate API layer.
+
+```typescript
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/utils/supabase/server'
+
+export async function login(formData: FormData) {
+  const supabase = await createClient()
+  
+  const data = {
+    email: formData.get('email') as string,
+    password: formData.get('password') as string,
+  }
+
+  const { error } = await supabase.auth.signInWithPassword(data)
+
+  if (error) {
+    redirect(`/login?error=${encodeURIComponent(error.message)}`)
+  }
+
+  // Purge the router cache to ensure the user sees fresh data
+  revalidatePath('/dashboard', 'layout')
+  redirect('/dashboard')
+}
+```
+
+### The Client Setup (`DashboardClient.tsx`)
+Inside the client components, we initialize the browser client. The client automatically picks up the HTTP-only cookie set by the server action.
+
 ```typescript
 import { createBrowserClient } from '@supabase/ssr'
+
 export function createClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -101,268 +232,307 @@ export function createClient() {
   )
 }
 ```
-- **Used in**: Client Components (`"use client"`) like `DashboardClient.tsx`
-- **How it works**: `createBrowserClient` stores the auth session in browser cookies. The `!` (non-null assertion) tells TypeScript these env vars are guaranteed to exist at runtime.
-- **Why `NEXT_PUBLIC_` prefix?** Next.js only exposes environment variables to the browser if they start with `NEXT_PUBLIC_`. Without this prefix, the variable would be `undefined` on the client side — a common source of bugs.
-
-#### `src/utils/supabase/server.ts` — Server Client
-- **Used in**: Server Components, Server Actions, Route Handlers
-- **Key difference**: Uses `cookies()` from `next/headers` to read/write HTTP-only cookies. The `try/catch` in `setAll` is intentional — when called from a Server Component (which is read-only), cookie writes will throw. The middleware handles session refresh instead.
-
-#### `src/lib/supabase.ts` — Legacy Client (Fallback)
-- Uses `createClient` directly from `@supabase/supabase-js` (not SSR-aware)
-- Includes placeholder URL/key fallback so the build never crashes even without `.env.local`
 
 ---
 
-## 5. Authentication Architecture
+## 6. Next.js Middleware & Edge Runtime
 
-### `src/app/login/actions.ts` — Server Actions
+Middleware intercepts every request at the edge (before hitting a Node.js server) to enforce route protection.
 
-**What is `'use server'`?** This directive marks every exported function in this file as a **Server Action**. Server Actions are functions that execute on the server but can be called directly from Client or Server Components — Next.js automatically creates an API endpoint behind the scenes. The browser sends a `POST` request with the form data, the function runs server-side, and returns a response.
-
-#### `login()` function
 ```typescript
-export async function login(formData: FormData) {
+import { NextResponse, type NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+
+export async function updateSession(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() { return request.cookies.getAll() },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Protect /dashboard and all other internal routes
+  if (
+    !user &&
+    request.nextUrl.pathname !== '/' &&
+    !request.nextUrl.pathname.startsWith('/login') &&
+    !request.nextUrl.pathname.startsWith('/register') &&
+    !request.nextUrl.pathname.startsWith('/auth')
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  return supabaseResponse
+}
 ```
-- **`FormData` parameter**: When a `<button formAction={login}>` is clicked inside a `<form>`, the browser serializes all form inputs into a `FormData` object automatically. We extract values using `formData.get('email')`.
-- **`supabase.auth.signInWithPassword()`**: Sends credentials to Supabase Auth. Returns `{ data, error }`. On success, Supabase sets an HTTP-only JWT cookie.
-- **Error handling**: We check for specific error strings (`'email not confirmed'`, `'invalid login credentials'`) to show user-friendly messages instead of raw Supabase errors. The `encodeURIComponent()` ensures special characters in error messages don't break the URL.
-- **`revalidatePath('/dashboard', 'layout')`**: After login, this tells Next.js to purge the cached version of `/dashboard`. Without this, the user might see stale data from a previous session. The `'layout'` argument revalidates the entire layout tree, not just the page.
-- **`redirect('/dashboard')`**: Server-side redirect using Next.js's `redirect()` from `next/navigation`. This throws a special `NEXT_REDIRECT` error internally to halt execution and send a 307 redirect response.
 
-#### `signup()` function
-- **`options.data.full_name`**: Supabase Auth allows storing arbitrary metadata in `user_metadata`. We store the user's full name here so it's accessible via `user.user_metadata.full_name` without a separate database query.
-- **Email confirmation check**: `if (!data.session)` — When Supabase has email confirmation enabled, `signUp` succeeds but returns `null` for the session. We redirect to login with an info message rather than to the dashboard.
-
-#### `signInWithGoogle()` function
-- **`signInWithOAuth({ provider: 'google' })`**: Initiates the OAuth 2.0 Authorization Code flow. Supabase constructs a Google consent URL with our configured `client_id`, `redirect_uri`, and scopes.
-- **`redirectTo`**: After Google authenticates the user, it redirects back to this URL with an authorization `code` parameter. Our `/auth/callback` route handler exchanges this code for a session.
-- **`NEXT_PUBLIC_SITE_URL` fallback**: In production (Vercel), this is set to the deployment URL. Locally, it defaults to `http://localhost:3000`.
+This prevents Unauthenticated Users from ever seeing the Dashboard layout, sending a 307 Redirect immediately.
 
 ---
 
-## 6. Middleware & Route Protection
+## 7. RSC (React Server Components) vs Client Boundaries
 
-### `src/utils/supabase/middleware.ts`
+Penny leverages the RSC architecture strictly to maximize performance and security.
 
-**Concept — Next.js Middleware**: `middleware.ts` runs on the **Edge Runtime** before any page renders. It intercepts every request matching the configured `matcher` pattern. This is fundamentally different from checking auth inside a React component — middleware prevents the page HTML from ever being generated for unauthorized users.
+### Server Boundary: `src/app/dashboard/page.tsx`
+This file is rendered purely on the server.
+1. It reads the JWT securely.
+2. It executes the SQL query against Supabase.
+3. It passes the raw JSON data down to the client.
 
-**Cookie refresh mechanism**: `createServerClient` with custom `getAll`/`setAll` cookie handlers reads the Supabase JWT from the request cookies, validates it, and if expired, refreshes it by contacting Supabase Auth. The refreshed token is written back via `supabaseResponse.cookies.set()`.
-
-**Route whitelist logic**:
 ```typescript
-if (
-  !user &&
-  request.nextUrl.pathname !== '/' &&
-  !request.nextUrl.pathname.startsWith('/login') &&
-  !request.nextUrl.pathname.startsWith('/register') &&
-  !request.nextUrl.pathname.startsWith('/auth') &&
-  !request.nextUrl.pathname.startsWith('/api')
-)
-```
-This allows unauthenticated access to: the landing page (`/`), login, register, auth callbacks, and API routes. Everything else (primarily `/dashboard`) requires authentication.
+// NO 'use client' directive here
+import { createClient } from '@/utils/supabase/server'
+import DashboardClient from '../DashboardClient'
+import { redirect } from 'next/navigation'
 
-### `src/proxy.ts` — Middleware Entry Point
-**`matcher` regex**: `'/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'`
-- `(?!...)` is a **negative lookahead** — it excludes static assets from middleware processing
-- Without this, every CSS file, image, and JS chunk would trigger a Supabase auth check, adding latency
+export default async function DashboardPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) redirect('/login')
+
+  const { data: transactions } = await supabase
+    .from('transactions')
+    .select('*')
+    .order('date', { ascending: false })
+
+  return (
+    <DashboardClient 
+      initialTransactions={transactions || []} 
+      userEmail={user.email!}
+      userName={user.user_metadata?.full_name || ''}
+      userId={user.id}
+    />
+  )
+}
+```
 
 ---
 
-## 7. Server Components vs Client Components
+## 8. Dashboard Component Architecture
 
-### `src/app/dashboard/page.tsx` — Server Component
-This file has NO `"use client"` directive, making it a **React Server Component (RSC)**. It:
-1. Creates a server-side Supabase client (with cookie access)
-2. Calls `supabase.auth.getUser()` — this happens on the server, the JWT never reaches the browser
-3. Queries `supabase.from('transactions').select('*')` — the database query runs server-side, the raw SQL never reaches the browser
-4. Maps the raw database rows into typed `Transaction[]` objects
-5. Passes this data as props to `<DashboardClient>`, which IS a Client Component
+The primary orchestration happens in `DashboardClient.tsx`.
 
-**Why this pattern?** Security + Performance. The database credentials, query logic, and raw response are never exposed to the client. The browser only receives the final rendered HTML + the serialized props.
+### State Management
+Instead of using complex URL routing for sub-pages, we utilize a local state-machine `activeTab`. This enables instantaneous transitions without network latency.
 
-### `src/app/DashboardClient.tsx` — Client Component
-The `"use client"` directive at line 1 creates a **client boundary**. Everything below this point ships JavaScript to the browser.
+```typescript
+const [activeTab, setActiveTab] = useState('dashboard')
+const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions)
+const [profileName, setProfileName] = useState(userName)
+const [budgets, setBudgets] = useState<Record<string, number>>(defaultBudgets)
+```
 
-**`useState` for tab-based SPA routing**: Instead of using Next.js file-based routes for each dashboard section (transactions, settings, budget), we use `useState('dashboard')` to switch views. This avoids full-page reloads and keeps the sidebar state persistent.
+### Mutating Data
+When modifying the ledger, optimistic-like updates are used. We await the database insertion, then update local state immediately rather than triggering a full re-fetch.
 
-**`useEffect` for dynamic titles**: `document.title = 'Penny - Dashboard'` updates the browser tab title reactively when tabs change.
+```typescript
+const handleAddTransaction = async (newTx: Omit<Transaction, 'id' | 'date'>) => {
+  const today = new Date().toISOString().split('T')[0];
+  const { data, error } = await supabase
+    .from('transactions')
+    .insert([{ user_id: userId, ...newTx, date: today }])
+    .select();
+    
+  if (!error && data) {
+    // Prepend to the UI state immediately
+    setTransactions(prev => [data[0] as Transaction, ...prev]);
+  }
+};
+```
 
 ---
 
-## 8. CRUD Operations
+## 9. MagicParser: Generative AI + Heuristic Fallback
 
-### Insert (`handleAddTransaction`)
-```typescript
-const { data, error } = await supabase
-  .from('transactions')
-  .insert([{ user_id: userId, ...newTx, date: today }])
-  .select();
-```
-- `.insert([...])`: Accepts an array of rows. The spread `...newTx` merges the form fields (description, amount, type, category) with the server-injected `user_id` and computed `date`.
-- `.select()`: Chained after insert to return the newly created row (including the auto-generated `id`). Without `.select()`, the insert returns nothing.
-- **Optimistic-like update**: `setTransactions(prev => [data[0], ...prev])` prepends the new transaction to the existing array, giving instant UI feedback.
+The MagicParser is Penny's USP. It extracts financial data from raw SMS copy using Google's Gemini 1.5 Flash.
 
-### Delete (`handleDelete`)
-```typescript
-await supabase.from('transactions').delete().eq('id', id).eq('user_id', userId);
-```
-- **Double `.eq()` filter**: Ensures a user can only delete their own transactions (defense-in-depth on top of RLS).
-- **State cleanup**: `prev.filter(t => t.id !== id)` removes the deleted transaction from local state without re-fetching from the database.
+### The Two-Step NLP Pipeline
+1. **Extraction Request**: The raw string is POSTed to `/api/parse-statement`.
+2. **Review & Commit**: The client renders an editable table of the parsed data. The user can adjust categories or amounts before executing the batch save.
 
-### Bulk Insert (`handleSaveParsed`)
+### `route.ts` Logic
 ```typescript
-const rows = parsed.map(({ id, ...tx }) => ({ user_id: userId, ...tx }));
+const prompt = `You are a highly intelligent financial data extraction assistant...
+Extract EVERY single financial transaction. Return ONLY a raw JSON array.
+[{"description":"Swiggy","amount":450,"type":"expense","date":"2025-07-15","category":"Food & Dining"}]`;
+
+const response = await fetch(
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
+  {
+    method: 'POST',
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
+    })
+  }
+);
 ```
-- **Destructuring to remove `id`**: The parsed transactions have temporary client-side IDs (`parsed-1234-0`). The `{ id, ...tx }` destructure extracts `id` and discards it, keeping only the real fields. PostgreSQL generates actual UUIDs on insert.
+
+### The Heuristic Fallback
+If the API key is missing or the network fails, the system cascades to an ultra-fast local Regex parser:
+
+```typescript
+// 1. Extract the numeric amount (e.g., Rs. 500.50)
+const amountMatch = line.match(/(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d{1,2})?)/i);
+
+// 2. Extract the merchant name
+const descMatch = line.match(/(?:at|to|@|merchant|payee|by)\s+([A-Z][A-Za-z0-9\s&_\-\.]{1,35}?)(?:\s+on|\s+ref|\s+utr|\s+txn|$)/i);
+
+// 3. Indian Context Categorization
+if (/swiggy|zomato|food|restaurant|mcdonalds/i.test(line)) category = 'Food & Dining';
+else if (/uber|ola|rapido|petrol|fuel/i.test(line)) category = 'Transportation';
+```
 
 ---
 
-## 9. LLM Integration — Gemini 1.5 Flash
+## 10. Data Visualization with Recharts
 
-### `src/app/api/parse-statement/route.ts`
+The `ExpenseChart.tsx` component translates the transaction ledger into a brutalist Donut Chart.
 
-**Why Gemini 1.5 Flash?** Optimized for high-throughput, low-latency tasks. Categorizing a bank SMS doesn't need the reasoning depth of GPT-4 or Gemini Pro — it needs speed and cost efficiency.
-
-**API call anatomy**:
-```typescript
-fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`)
+```tsx
+<ResponsiveContainer width="100%" height="100%">
+  <PieChart>
+    <Pie
+      data={chartData}
+      cx="50%"
+      cy="50%"
+      innerRadius={64}
+      outerRadius={82}
+      paddingAngle={3}
+      dataKey="value"
+      stroke="none"
+      cornerRadius={3}
+    >
+      {chartData.map((entry, index) => (
+        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+      ))}
+    </Pie>
+    <Tooltip content={<CustomTooltip />} />
+  </PieChart>
+</ResponsiveContainer>
 ```
-- We use the REST API directly via `fetch()` instead of the official `@google/generative-ai` SDK to avoid an extra dependency and keep the bundle lean.
-- **`temperature: 0.1`**: Controls randomness. 0.0 = fully deterministic, 1.0 = maximum creativity. We use 0.1 because we want consistent, predictable JSON output — not creative writing.
-- **`maxOutputTokens: 2048`**: Caps the response length to prevent runaway generation costs.
 
-**Prompt engineering decisions**:
-- Explicitly listing valid categories forces the LLM into a closed-set classification task
-- "Return ONLY a raw JSON array. No markdown." — LLMs frequently wrap JSON in ` ```json ``` ` blocks despite being told not to
-- Providing an example JSON format acts as few-shot guidance
-
-**Sanitization pipeline**:
-```typescript
-content = content
-  .replace(/^```json\s*/i, '')
-  .replace(/^```\s*/i, '')
-  .replace(/\s*```$/i, '')
-  .trim();
-```
-Three regex passes strip markdown code fences:
-- `/^```json\s*/i` — Removes opening ` ```json ` with optional whitespace
-- `/^```\s*/i` — Removes plain opening ` ``` `
-- `/\s*```$/i` — Removes closing ` ``` `
-- The `^` and `$` anchors ensure we only strip fences at the boundaries, not inside the JSON content
-
-**Triple fallback strategy**:
-1. If `GEMINI_API_KEY` is missing → immediately use heuristic parser (no API call)
-2. If API returns non-200 → fall back to heuristic parser
-3. If `JSON.parse()` fails on the response → fall back to heuristic parser
+**Key visual decisions**:
+- `paddingAngle={3}` adds a hard slice between segments.
+- Center typography is overlaid using absolute CSS positioning rather than SVG `<text>` nodes, allowing for HTML formatting.
 
 ---
 
-## 10. Heuristic Fallback Parser — Line by Line
+## 11. Dynamic Budget Allocation Engine
 
-### Amount Regex: `/(?:rs\.?|inr|₹)\s*([\d,]+(?:\.\d{1,2})?)/i`
-| Token | Meaning |
-|---|---|
-| `(?:...)` | Non-capturing group — groups alternatives without creating a backreference |
-| `rs\.?` | Matches "Rs" or "Rs." — the `\.?` makes the dot optional |
-| `\|inr\|₹` | Alternatives: "INR" or the ₹ symbol |
-| `\s*` | Zero or more whitespace characters between currency symbol and amount |
-| `([\d,]+)` | **Capturing group** — one or more digits or commas (e.g., "1,50,000") |
-| `(?:\.\d{1,2})?` | Optional decimal part with 1-2 digits (e.g., ".50") |
-| `/i` | Case-insensitive flag |
+Budgets are no longer static. They respond reactively to user input in the `DashboardClient.tsx` settings panel.
 
-### Merchant Regex: `/(?:at|to|@|merchant|payee|by)\s+([A-Z][A-Za-z0-9\s&_\-\.]{1,35}?)(?:\s+on|\s+ref|...)/i`
-- Looks for prepositions ("at", "to") followed by a capitalized word (merchant name)
-- `{1,35}?` — Lazy quantifier, matches 1-35 chars but as few as possible to avoid over-capturing
-- The trailing alternatives (`on|ref|utr|txn`) act as stop-words to terminate the merchant name
+### State Drilling
+The `DashboardClient` manages the `budgets` state and passes it down through `Dashboard` to the `BudgetProgress` component.
 
-### Category inference chain
-```typescript
-if (/swiggy|zomato|food|restaurant|.../.test(d)) category = 'Food & Dining';
-else if (/uber|ola|rapido|metro|.../.test(d)) category = 'Transportation';
+```tsx
+// In DashboardClient.tsx
+<Dashboard budgetsRecord={budgets} />
+
+// In BudgetProgress.tsx
+const activeLimits = budgetsRecord || DEFAULT_BUDGETS;
+const budgets = Object.entries(activeLimits).map(([category, limit]) => {
+  const spent = catTotals[category] || 0;
+  const percent = Math.min((spent / limit) * 100, 100);
+  const isOver = spent > limit;
+  // ...
+});
 ```
-This is a waterfall of regex tests against the combined description + original line. The order matters — the first match wins. Indian-specific merchants (Swiggy, Zomato, Ola, Rapido, BigBasket, Blinkit, IRCTC) are explicitly included.
+
+### The Progress Meter
+The meter uses inline styles for precise `%` rendering and Tailwind colors for conditional formatting.
+
+```tsx
+<div className="h-5 w-full bg-transparent border border-[#030213] overflow-hidden relative flex items-center">
+  <div
+    className="h-full border-r border-[#030213] transition-all duration-500"
+    style={{
+      width: `${percent}%`,
+      backgroundColor: isOver ? '#d4183d' : percent > 80 ? '#f59e0b' : '#10b981',
+    }}
+  />
+</div>
+```
 
 ---
 
-## 11. Data Visualization — Recharts
+## 12. State Synchronization & Local Storage
 
-### `ExpenseChart.tsx` — Donut Chart
+To ensure budget limits persist without hitting the Supabase backend on every keystroke, a `localStorage` sync mechanism was implemented.
 
-**Data pipeline**: `transactions[] → filter(expense) → groupBy(category) → sort(descending) → PieChart`
+### Read on Mount
+```typescript
+useEffect(() => {
+  const saved = localStorage.getItem(`penny_budgets_${userId}`)
+  if (saved) {
+    try { setBudgets(JSON.parse(saved)) } catch (e) {}
+  }
+}, [userId])
+```
 
-**`<ResponsiveContainer width="100%" height="100%">`**: Wraps the chart in a div that automatically resizes based on the parent container. Without this, Recharts renders at a fixed pixel size.
+### Write on Save
+The inputs update React state immediately for visual feedback, but the persistent write requires explicit action to prevent IO thrashing.
 
-**`<Pie innerRadius={64} outerRadius={82}>`**: The difference between inner and outer radius creates the "donut hole" effect. A PieChart with `innerRadius={0}` would be a solid pie.
+```typescript
+const handleSaveBudgets = () => {
+  localStorage.setItem(`penny_budgets_${userId}`, JSON.stringify(budgets))
+  alert('Budget limits saved successfully.')
+}
+```
 
-**`paddingAngle={3}`**: Adds 3 degrees of gap between each slice for visual separation.
+### Profile Metadata Sync
+When updating the user's name, we write directly to the Supabase `raw_user_meta_data` field.
 
-**`cornerRadius={3}`**: Rounds the ends of each arc — a subtle detail that elevates the design from "chart library default" to "custom dashboard."
-
-**Center overlay technique**: An absolutely positioned `<div>` is placed over the chart center using `inset-0` + flexbox centering. `pointer-events-none` ensures mouse events pass through to the chart underneath for tooltip interactions.
-
-**`toLocaleString('en-IN')`**: Formats numbers in the Indian numbering system (lakhs/crores): `150000` → `"1,50,000"` instead of `"150,000"`.
+```typescript
+const handleUpdateProfile = async () => {
+  setIsSavingProfile(true)
+  await supabase.auth.updateUser({ data: { full_name: profileName } })
+  setIsSavingProfile(false)
+}
+```
+This updates the JWT session seamlessly. Because `profileName` is mapped to the header UI `{profileName || userEmail.split('@')[0]}`, the visual change is instantaneous without requiring a browser reload.
 
 ---
 
-## 12. Budget Progress System
+## 13. Deployment & Environment Management
 
-### `BudgetProgress.tsx`
+### Required Environment Variables
+For the system to function in production, the following keys must be supplied to the Node edge environment:
 
-**`BUDGET_LIMITS` — a `Record<string, number>`**: TypeScript utility type where keys are category names and values are rupee limits. `Record<K, V>` is equivalent to `{ [key: K]: V }`.
+```env
+# Standard Supabase Integration
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
-**Aggregation logic**:
-```typescript
-transactions
-  .filter(t => t.type === 'expense')
-  .forEach(t => { catTotals[t.category] = (catTotals[t.category] ?? 0) + t.amount; });
+# Generative AI Processing
+GEMINI_API_KEY=your-google-ai-studio-key
+
+# OAuth Redirect Validation
+NEXT_PUBLIC_SITE_URL=https://penny-ledger.vercel.app
 ```
-- `?? 0` — Nullish coalescing operator. Returns the right side ONLY if the left side is `null` or `undefined` (not for `0` or `""`, unlike `||`).
 
-**Progress bar color logic**:
-```typescript
-backgroundColor: isOver ? '#f87171' : percent > 80 ? '#fb923c' : '#334155'
-```
-Ternary chain: Red if over budget → Orange if >80% → Dark slate otherwise. This provides immediate visual feedback — a recruiter looking at the dashboard instantly understands budget health.
-
-**`transition-all duration-500`**: The progress bar width animates over 500ms when data changes, creating a smooth fill effect.
+### Edge Caching Warnings
+When deploying to Vercel, `revalidatePath('/dashboard')` is critical during authentication and mutation events to clear the edge cache. Failing to invoke this function results in stale-while-revalidate states displaying incorrect ledger balances to the user.
 
 ---
 
-## 13. OAuth Callback & Session Exchange
-
-### `src/app/auth/callback/route.ts`
-After Google authenticates the user, it redirects to `/auth/callback?code=XXXX`. This Route Handler:
-1. Extracts the `code` query parameter
-2. Calls `supabase.auth.exchangeCodeForSession(code)` — sends the authorization code to Supabase, which exchanges it with Google for an access token, creates a user session, and sets HTTP-only cookies
-3. Redirects to `/dashboard` on success, or `/login?error=...` on failure
-
-**`const next = searchParams.get('next') ?? '/dashboard'`**: Supports deep-linking — if a user tries to access `/dashboard/settings` while logged out, the middleware can append `?next=/dashboard/settings` to preserve their intended destination.
-
----
-
-## 14. Sign Out & Cache Invalidation
-
-### `src/app/auth/signout/route.ts`
-- **Route Handler (not Server Action)**: Uses `POST` method via a `<form action="/auth/signout">` to prevent CSRF attacks. GET-based logout links are vulnerable because any `<img src="/auth/signout">` on any site could log out your users.
-- **`revalidatePath('/', 'layout')`**: Purges the entire app's cached data. Without this, after signing out and signing in as a different user, Next.js might serve the previous user's cached dashboard.
-- **`status: 302`**: Temporary redirect (not 301 permanent). The browser should always re-check this URL rather than caching the redirect.
-
----
-
-## 15. Root Layout & Font Loading
-
-### `src/app/layout.tsx`
-```typescript
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-```
-- **`next/font/google`**: Downloads the Inter font at build time and self-hosts it. No external requests to Google Fonts at runtime — better privacy, performance, and no layout shift.
-- **`variable: "--font-inter"`**: Injects a CSS custom property instead of applying the font directly. This lets Tailwind reference it via `@theme { --font-sans: var(--font-inter) }`.
-- **`display: "swap"`**: The browser renders text in a fallback font immediately, then swaps to Inter once it loads. Prevents invisible text (FOIT — Flash of Invisible Text).
-
-### Metadata Template
-```typescript
-title: { template: 'Penny - %s', default: 'Penny' }
-```
-Child pages export `metadata = { title: 'Login' }` and Next.js automatically renders the tab as "Penny - Login". The `%s` is a placeholder.
+**END OF LOG**
+*(System compiled on 2026-05-25. Brutalist UI Core v1.0. All checks passing.)*

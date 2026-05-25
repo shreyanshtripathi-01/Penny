@@ -1,7 +1,15 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import DashboardClient from '../DashboardClient'
-import { Transaction } from '@/components/new_ui/types'
+
+export type Transaction = {
+  id: string
+  description: string
+  amount: number
+  category: string
+  type: string
+  date: string
+}
 
 export default async function Home() {
   const supabase = await createClient()
