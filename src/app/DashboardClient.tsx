@@ -127,7 +127,7 @@ export default function DashboardClient({
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f5f2] text-[#030213] font-sans selection:bg-[#030213] selection:text-[#f5f5f2] flex flex-col">
+    <div className="h-screen bg-[#f5f5f2] text-[#030213] font-sans selection:bg-[#030213] selection:text-[#f5f5f2] flex flex-col overflow-hidden">
       {/* Texture Layer */}
       <div 
         className="fixed inset-0 pointer-events-none opacity-[0.04]" 
@@ -177,10 +177,10 @@ export default function DashboardClient({
       </header>
 
       {/* Main Grid Content Area */}
-      <main className="flex-1 grid grid-cols-1 md:grid-cols-12 relative z-10">
+      <main className="flex-1 grid grid-cols-1 md:grid-cols-12 relative z-10 overflow-hidden">
         
         {/* Left Sidebar Navigation */}
-        <div className="md:col-span-3 border-b md:border-b-0 md:border-r border-[#030213] bg-[#f5f5f2] flex flex-col justify-between">
+        <div className="md:col-span-3 border-b md:border-b-0 md:border-r border-[#030213] bg-[#f5f5f2] flex flex-col justify-between overflow-y-auto">
           <nav className="flex flex-col">
             {[
               { id: 'dashboard', label: 'Overview' },
@@ -205,8 +205,8 @@ export default function DashboardClient({
           </nav>
         </div>
 
-        {/* Main Workspace Content Area */}
-        <div className="md:col-span-9 bg-[#f5f5f2] p-6 md:p-8 flex flex-col min-h-[60vh]">
+        {/* Right Content Area */}
+        <div className="md:col-span-9 p-4 sm:p-6 md:p-12 overflow-y-auto">
           
           {activeTab === 'dashboard' && (
             <Dashboard 

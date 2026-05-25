@@ -65,7 +65,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                   autoComplete="email"
                   required
                   className="w-full px-4 py-3 bg-[#f5f5f2] border border-[#030213] text-[15px] text-[#030213] placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-[2px] rounded-none transition-none"
-                  placeholder="name@domain.com"
                 />
               </div>
 
@@ -80,7 +79,6 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
                   autoComplete="current-password"
                   required
                   className="w-full px-4 py-3 bg-[#f5f5f2] border border-[#030213] text-[15px] text-[#030213] placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-[2px] rounded-none transition-none"
-                  placeholder="••••••••"
                 />
               </div>
 

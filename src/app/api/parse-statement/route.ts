@@ -24,22 +24,22 @@ export async function POST(request: Request) {
     }
 
     // 2. Parse payload
-    const { text } = await request.json();
+    const { text, inlineData } = await request.json();
 
-    if (!text?.trim()) {
-      return NextResponse.json({ error: 'Text is required' }, { status: 400 });
+    if (!text?.trim() && !inlineData) {
+      return NextResponse.json({ error: 'Text or File is required' }, { status: 400 });
     }
 
     const geminiApiKey = process.env.GEMINI_API_KEY;
 
     if (!geminiApiKey) {
-      return NextResponse.json({ transactions: heuristicParse(text) });
+      return NextResponse.json({ transactions: heuristicParse(text || '') });
     }
 
     const prompt = `You are a highly intelligent financial data extraction assistant specialized in the Indian context.
-The user is pasting either a raw bank SMS (e.g. HDFC, SBI, ICICI, UPI) OR writing in natural conversational language (e.g. "I spent 400 on swiggy", "got my 50k salary today", "paid 1200 for electricity bill").
+The user is providing either a raw bank SMS, natural conversational language, OR an uploaded file (like a PDF bank statement, CSV, or receipt).
 
-Your task: extract EVERY single financial transaction mentioned in the text. For each transaction return:
+Your task: extract EVERY single financial transaction you can find. For each transaction return:
 - description: merchant, payee name, or brief description (clean, human-readable, max 40 chars. e.g. "Swiggy", "Electricity Bill", "Salary")
 - amount: numeric only (no ₹, Rs, INR symbol), always positive
 - type: "expense" if it's spending, debit, transfer out, or payment. "income" if it's salary, credit, received, or adding money.
@@ -51,8 +51,13 @@ Return ONLY a raw JSON array. No markdown. No explanation. No code blocks. Examp
 
 If no transactions are found, return an empty array: []
 
-Raw text to parse:
-${text}`;
+Raw text to parse (if any):
+${text || 'No text provided. Please parse the attached document.'}`;
+
+    const parts: any[] = [{ text: prompt }];
+    if (inlineData) {
+      parts.push({ inlineData });
+    }
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
@@ -60,7 +65,7 @@ ${text}`;
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: [{ parts }],
           generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
         }),
       }

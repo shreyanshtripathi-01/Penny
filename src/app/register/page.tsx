@@ -59,7 +59,6 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
                   autoComplete="name"
                   required
                   className="w-full px-4 py-3 bg-[#f5f5f2] border border-[#030213] text-[15px] text-[#030213] placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-[2px] rounded-none transition-none"
-                  placeholder="John Doe"
                 />
               </div>
 
@@ -74,7 +73,6 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
                   autoComplete="email"
                   required
                   className="w-full px-4 py-3 bg-[#f5f5f2] border border-[#030213] text-[15px] text-[#030213] placeholder-gray-400 focus:outline-none focus:ring-0 focus:border-[2px] rounded-none transition-none"
-                  placeholder="name@domain.com"
                 />
               </div>
 
@@ -90,7 +88,6 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
                   required
                   minLength={6}
                   className="w-full px-4 py-3 bg-[#f5f5f2] border border-[#030213] text-[15px] text-[#030213] focus:outline-none focus:ring-0 focus:border-[2px] rounded-none transition-none"
-                  placeholder="••••••••"
                 />
               </div>
 

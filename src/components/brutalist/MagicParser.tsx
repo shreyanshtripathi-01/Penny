@@ -22,31 +22,65 @@ const EXAMPLES = [
 
 export function MagicParser({ onSaveParsedTransactions }: MagicParserProps) {
   const [text, setText] = useState('');
+  const [selectedFile, setSelectedFile] = useState<{ name: string, mimeType: string, data: string } | null>(null);
   const [isParsing, setIsParsing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [parsed, setParsed] = useState<ParsedTx[] | null>(null);
   const [savedCount, setSavedCount] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate size (e.g. max 5MB for Gemini payload constraints)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("File is too large. Please upload a file smaller than 5MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64Data = (reader.result as string).split(',')[1];
+      setSelectedFile({
+        name: file.name,
+        mimeType: file.type || 'application/octet-stream',
+        data: base64Data
+      });
+      setError(null);
+    };
+    reader.onerror = () => setError("Failed to read file.");
+    reader.readAsDataURL(file);
+  };
 
   const handleParse = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() && !selectedFile) return;
     setIsParsing(true);
     setError(null);
     setParsed(null);
     setSavedCount(null);
 
     try {
+      const bodyPayload: any = { text };
+      if (selectedFile) {
+        bodyPayload.inlineData = {
+          mimeType: selectedFile.mimeType,
+          data: selectedFile.data
+        };
+      }
+
       const res = await fetch('/api/parse-statement', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify(bodyPayload),
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || 'Failed to parse');
 
       if (!data.transactions || !Array.isArray(data.transactions) || data.transactions.length === 0) {
-        setError("Couldn't find any transactions in that text. Try being more specific about amounts.");
+        setError("Couldn't find any transactions in that input. Try being more specific.");
         return;
       }
 
@@ -87,6 +121,8 @@ export function MagicParser({ onSaveParsedTransactions }: MagicParserProps) {
       setSavedCount(parsed.length);
       setParsed(null);
       setText('');
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     } catch {
       setError('Failed to save. Please try again.');
     } finally {
@@ -99,11 +135,14 @@ export function MagicParser({ onSaveParsedTransactions }: MagicParserProps) {
     setError(null);
     setSavedCount(null);
     setText('');
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
     setTimeout(() => textareaRef.current?.focus(), 50);
   };
 
   const useExample = (ex: string) => {
     setText(ex);
+    setSelectedFile(null);
     textareaRef.current?.focus();
   };
 
@@ -114,7 +153,7 @@ export function MagicParser({ onSaveParsedTransactions }: MagicParserProps) {
       <div>
         <h1 className="text-2xl font-black tracking-tight text-[#030213]">Statement Parser</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Just type what you spent — in any way you like. We'll read it and pull out all the transactions automatically.
+          Type your expenses, or upload a bank statement PDF/Image. We'll extract everything automatically.
         </p>
       </div>
 
@@ -139,15 +178,52 @@ export function MagicParser({ onSaveParsedTransactions }: MagicParserProps) {
       {/* Input area — shown when no preview */}
       {!parsed && savedCount === null && (
         <div className="border border-[#030213] bg-[#f5f5f2] shadow-[4px_4px_0px_0px_#030213]">
-          <div className="px-6 py-4 border-b border-[#030213]">
-            <h2 className="text-sm font-bold text-[#030213]">Paste or type anything</h2>
+          <div className="px-6 py-4 border-b border-[#030213] flex justify-between items-center">
+            <h2 className="text-sm font-bold text-[#030213]">Provide Data Source</h2>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept=".pdf,image/*,.csv"
+              onChange={handleFileSelect}
+            />
           </div>
-          <div className="p-6 space-y-4">
+          <div className="p-6 space-y-6">
+            
+            {!selectedFile ? (
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-[#030213]/30 hover:border-[#030213] hover:bg-[#030213]/5 bg-white p-8 text-center cursor-pointer transition-none flex flex-col items-center justify-center gap-2"
+              >
+                <span className="font-mono text-2xl font-bold text-[#030213] leading-none mb-2">+</span>
+                <span className="font-bold text-sm uppercase tracking-widest text-[#030213]">Upload Statement</span>
+                <span className="text-xs text-gray-500 uppercase tracking-widest font-mono mt-1">PDF, CSV, PNG, JPG</span>
+              </div>
+            ) : (
+              <div className="w-full border-2 border-solid border-[#10b981] bg-[#10b981]/10 p-6 flex flex-col items-center justify-center gap-2 relative">
+                <span className="font-mono text-sm font-bold text-[#10b981] truncate px-4">
+                  [ {selectedFile.name} ]
+                </span>
+                <button 
+                  onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                  className="mt-2 text-[10px] font-bold text-[#d4183d] uppercase tracking-widest hover:underline"
+                >
+                  REMOVE ATTACHMENT
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-4">
+              <div className="flex-1 h-px bg-[#030213]/10"></div>
+              <span className="font-mono text-[10px] uppercase font-bold text-gray-400 tracking-widest">OR PASTE RAW TEXT</span>
+              <div className="flex-1 h-px bg-[#030213]/10"></div>
+            </div>
+
             <textarea
               ref={textareaRef}
               value={text}
               onChange={(e) => { setText(e.target.value); setError(null); }}
-              placeholder="e.g. paid 450 swiggy, coffee 80, got salary 55k today, Rs.1200 electricity bill..."
+              placeholder={selectedFile ? "Optional: Add extra context or instructions..." : "e.g. paid 450 swiggy, coffee 80, got salary 55k today..."}
               className="w-full bg-white border border-[#030213] p-4 text-sm text-[#030213] placeholder:text-gray-400 focus:outline-none resize-none leading-relaxed"
               rows={5}
               onKeyDown={(e) => {
@@ -163,14 +239,14 @@ export function MagicParser({ onSaveParsedTransactions }: MagicParserProps) {
 
             <button
               onClick={handleParse}
-              disabled={isParsing || !text.trim()}
+              disabled={isParsing || (!text.trim() && !selectedFile)}
               className="w-full py-3 bg-[#030213] text-[#f5f5f2] text-sm font-bold tracking-wide border border-[#030213] hover:bg-[#10b981] hover:text-[#030213] hover:border-[#10b981] disabled:opacity-30 disabled:cursor-not-allowed transition-none"
             >
-              {isParsing ? 'Reading your text...' : '→ Extract transactions'}
+              {isParsing ? 'Processing data...' : '→ Extract transactions'}
             </button>
 
             <p className="text-[10px] text-gray-400 text-center">
-              Press Ctrl+Enter to extract · Works with SMS, casual text, UPI alerts, anything
+              Press Ctrl+Enter to extract · AI supports PDFs, Screenshots, CSVs, and Text
             </p>
           </div>
 
